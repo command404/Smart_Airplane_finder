@@ -525,6 +525,49 @@ body.hide-right .info-panel{right:15px}
 #airportFlightBoard{max-height:170px;overflow-y:auto}
 .dashboard .legend{margin-top:8px}
 .ap-sec{margin-top:6px}.ap-sec summary{cursor:pointer;font-weight:bold;font-size:13px;color:#cbd5e1;padding:6px 0}
+
+/* ===== bigger, more readable top panel ===== */
+.top-panel{max-height:66vh!important;padding:16px 18px!important}
+.top-grid{grid-template-columns:repeat(auto-fit,minmax(175px,1fr))!important;gap:12px!important}
+.top-grid>*{max-height:260px!important;padding:12px!important;font-size:13px!important}
+.top-grid .section-title{font-size:14px!important;margin:0 0 8px!important}
+.top-grid .intelligence-card{padding:10px!important}
+.top-grid .intelligence-value{font-size:22px!important}
+.top-grid .mini-note,.top-grid .intelligence-detail{font-size:12px!important;line-height:1.45!important;margin-top:6px!important}
+.top-grid .intelligence-card *{font-size:inherit}
+.top-grid .intelligence-card .intelligence-value{font-size:22px!important}
+.top-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+@media(max-width:1250px){.top-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))!important}}
+.top-panel>.panel-head .section-title{font-size:16px!important}
+
+/* ===== hover-to-expand dropdown cards (top panel) ===== */
+.top-grid>.hv-slot{position:relative;max-height:none!important;padding:0!important;border:none!important;background:none!important;overflow:visible!important}
+.top-grid>.hv-slot>*{margin:0!important;padding:12px!important;border:1px solid #273449!important;border-radius:10px!important;background:#0f172a!important;max-height:260px!important;overflow-y:auto;font-size:13px!important;transition:border-color .15s}
+.top-grid>.hv-slot>*:hover{border-color:#38bdf8!important}
+@media(min-width:1251px){.top-panel{overflow:visible!important}}
+.top-grid>.hv-slot>.hv-pop{position:absolute!important;top:0;left:0;width:420px;max-width:80vw;max-height:min(72vh,560px)!important;z-index:5000;
+  background:#0c1730!important;border:1px solid #38bdf8!important;padding:18px!important;font-size:15px!important;
+  box-shadow:0 18px 50px #000c,0 0 0 1px #38bdf855;animation:hvIn .14s ease-out}
+.top-grid>.hv-slot>.hv-pop.hv-right{left:auto;right:0}
+.top-grid>.hv-slot>.hv-pop .section-title{font-size:17px!important;margin-bottom:12px!important}
+.top-grid>.hv-slot>.hv-pop .intelligence-value{font-size:30px!important}
+.top-grid>.hv-slot>.hv-pop .mini-note,.top-grid>.hv-slot>.hv-pop .intelligence-detail{font-size:14px!important;line-height:1.6!important}
+.top-grid>.hv-slot>.hv-pop .intelligence-card{padding:14px!important}
+.top-grid>.hv-slot>.hv-pop button,.top-grid>.hv-slot>.hv-pop select{font-size:15px!important;padding:11px!important}
+.hv-hint{font-size:12px;color:#7dd3fc;margin-left:auto;margin-right:12px}
+@keyframes hvIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+/* ===== hover cards: uniform compact size at rest, readable popup on hover ===== */
+@media (min-width:1251px){
+  .top-grid>.hv-slot{height:175px!important;min-width:0}
+  .top-grid>.hv-slot>*:not(.hv-pop){height:175px!important;max-height:175px!important;overflow:hidden!important;font-size:12px!important;overflow-wrap:anywhere;min-width:0}
+  .top-grid>.hv-slot>*:not(.hv-pop) .section-title{font-size:12px!important;margin:0 0 6px!important}
+  .top-grid>.hv-slot>*:not(.hv-pop) .intelligence-card{padding:7px!important}
+  .top-grid>.hv-slot>*:not(.hv-pop) .intelligence-value{font-size:17px!important}
+  .top-grid>.hv-slot>*:not(.hv-pop) .mini-note,.top-grid>.hv-slot>*:not(.hv-pop) .intelligence-detail{font-size:10px!important;margin-top:4px!important}
+  /* bottom-row cards open upward so the popup stays on screen */
+  .top-grid>.hv-slot:nth-child(n+5)>.hv-pop{top:auto;bottom:0}
+  .top-grid>.hv-slot>.hv-pop{max-height:min(420px,56vh)!important;overflow-y:auto!important}
+}
     </style>
 </head>
 
@@ -2792,6 +2835,36 @@ function renderAirportInfo(code){
   document.getElementById(id).addEventListener('change',function(){renderAirportInfo(this.value)}));
 renderAirportInfo('LHR');
 setInterval(()=>renderAirportInfo(apShown),60000);
+</script>
+
+<script>
+/* ===== HOVER-TO-EXPAND CARDS ===== */
+(function(){
+  const grid=document.querySelector('#topPanel .top-grid'), panel=document.getElementById('topPanel');
+  if(!grid) return;
+  const head=panel.querySelector('.panel-head');
+  const hint=document.createElement('span'); hint.className='hv-hint'; hint.textContent='Hover a card to expand it';
+  head.insertBefore(hint, head.lastElementChild);
+  const enabled=()=>window.matchMedia('(min-width:1251px)').matches;
+  [...grid.children].forEach(card=>{
+    const slot=document.createElement('div'); slot.className='hv-slot';
+    grid.insertBefore(slot,card); slot.appendChild(card);
+    let openT,closeT;
+    const open=()=>{
+      if(!enabled()||card.classList.contains('hv-pop')) return;
+      slot.style.height=slot.offsetHeight+'px';           // keep the grid from reflowing
+      const s=slot.getBoundingClientRect(), p=panel.getBoundingClientRect();
+      card.classList.toggle('hv-right', s.left+420>p.right);
+      card.classList.add('hv-pop');
+    };
+    const close=()=>{card.classList.remove('hv-pop','hv-right'); slot.style.height='';};
+    slot.addEventListener('mouseenter',()=>{clearTimeout(closeT);openT=setTimeout(open,140);});
+    slot.addEventListener('mouseleave',()=>{clearTimeout(openT);closeT=setTimeout(close,200);});
+    card.addEventListener('mouseenter',()=>clearTimeout(closeT));
+    card.addEventListener('focusin',open);
+    card.addEventListener('keydown',e=>{if(e.key==='Escape'){close();document.activeElement&&document.activeElement.blur();}});
+  });
+})();
 </script>
 <script src="/chat-widget.js"></script>
 </body>
